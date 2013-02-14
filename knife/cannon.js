@@ -1,7 +1,8 @@
 $(function() {
 	// Global parameters
-	var FRICTION        = 0.3;
-	var WORLD_FACTOR	= 40.0;
+	var FRICTION         = 0.4;
+	var WORLD_FACTOR	 = 40.0;
+	var DRAG_COEFFICIENT = 0.6;
 
 	// Creating a drawing context 
 	// (using sketch.js helper library).
@@ -72,11 +73,10 @@ $(function() {
 		var v_x = this.velocity_x;
 		var v_y = this.velocity_y;
 
-		var factor = 1.0 - 0.5 * atan(sqrt(v_x*v_x + v_y*v_y) / 40.0) / HALF_PI;
+		var factor = 1.0 - 0.5 * atan(sqrt(v_x*v_x + v_y*v_y) / 20.0) / HALF_PI;
 
 		ctx.rotate(atan2(v_y, v_x));
 		ctx.scale(1.0, factor);
-
 
 		context.beginPath();
 		context.arc(0.0, 0.0, this.radius, 0, TWO_PI);
@@ -87,15 +87,21 @@ $(function() {
 
 	var balls = [];
 
-	for(var i = 0; i < 100; ++i) {
+	function newBall(x, y) {
 		var b = new Ball();
 
-		b.x = random(1, ctx.width/WORLD_FACTOR);
-		b.y = random(1, ctx.height/WORLD_FACTOR);
+		b.x = x;
+		b.y = y;
 		b.color = random(1, 360);
+
 		b.radius = 0.3 + random(1, 50)/100;
+		b.mass = PI*b.radius*b.radius;
 
 		balls.push(b);
+	}
+
+	for(var i = 0; i < 350; ++i) {
+		newBall(random(1, ctx.width/WORLD_FACTOR), random(1, ctx.height/WORLD_FACTOR));
 	}
 
 
@@ -108,6 +114,10 @@ $(function() {
 	};
 
 	ctx.update = function() {
+		var t = ctx.now/400;
+
+		var d = 0.03*(pow(sin(t), 1));//0.03*(sin(t*2));
+
 		for(var i = 0; i < balls.length; ++i) {
 			var ball = balls[i];
 
@@ -116,15 +126,20 @@ $(function() {
 
 			var r = sqrt((ball.x - f_x)*(ball.x - f_x) + (ball.y - f_y)*(ball.y - f_y));
 
-			if(r > 0.1) {
-				ball.force_x = 40*(f_x - ball.x) / (r*r);
-				ball.force_y = 40*(f_y - ball.y) / (r*r);	
+
+			ball.force_x = 0.0;
+			ball.force_y = 0.0;
+
+			ball.force_x += -DRAG_COEFFICIENT * ball.velocity_x;
+			ball.force_y += -DRAG_COEFFICIENT * ball.velocity_y;
+			
+			if(r > 0.4 ) {
+				ball.force_x += 40*(f_x - ball.x) / (r*r);
+				ball.force_y += 40*(f_y - ball.y) / (r*r);	
 			} else {
-				ball.force_x = 0.0;
-				ball.force_y = 0.0;
 			}
- 
-			ball.move(0.02);
+
+				ball.move(0.04 + d);	
 		}
 	};
 });
