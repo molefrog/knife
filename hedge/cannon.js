@@ -12,8 +12,7 @@ $(function() {
 	var ax = 0, ay = 0; 
 
 	// Target
-	var tx = 0, ty = 0;
-	var rx = 0, ry = 0;
+	var targets = [{'x' : 0, 'y' : 0}];
 
 	var Settings = function() {
 	  this.K_1            = 2.0;
@@ -47,12 +46,14 @@ $(function() {
 	var F = function(x_, y_) {
 		var ax_ = 0, ay_ = 0;
 
-		var r = sqrt(pow(tx - x_, 2) + pow(ty - y_, 2));
-		if(r !== 0) {
-			ax_ = settings.K_1 * (r - settings.l) * (tx - x_) / (r) + settings.K_2 * (-vx);
-			ay_ = settings.K_1 * (r - settings.l) * (ty - y_) / (r) + settings.K_2 * (-vy);  
+		for(var i = 0; i < targets.length; ++i) {
+			var r = sqrt(pow(targets[i].x - x_, 2) + pow(targets[i].y - y_, 2));
+			if(r !== 0) {
+				ax_ += settings.K_1 * (r - settings.l) * (targets[i].x - x_) / (r) + settings.K_2 * (-vx);
+				ay_ += settings.K_1 * (r - settings.l) * (targets[i].y - y_) / (r) + settings.K_2 * (-vy);  
+			}
 		}
-			
+
 		ay_ += settings.gravity;
 		return [ax_, ay_];
 	};
@@ -100,29 +101,33 @@ $(function() {
 			}
 		}
 
-		ctx.lineWidth   = 2;
-		ctx.strokeStyle = '#dddddd';
-	    ctx.beginPath();
-		ctx.moveTo(x, y);
-		
-		var saw_count = 15;
-		var saw_length = 10;
-		for(var k = 0; k < saw_count; ++k) {
 
-			var nx = saw_length * pow(-1, k)   * (ty-y);
-			var ny = saw_length * pow(-1, k+1) * (tx-x);
+		for(var i = 0; i < targets.length; ++i) {
+			ctx.lineWidth   = 2;
+			ctx.strokeStyle = '#dddddd';
+		    ctx.beginPath();
+			ctx.moveTo(x, y);
 			
-			var r = sqrt(pow(tx - x, 2) + pow(ty - y, 2));
-			if(r !== 0) {
-				nx /= r;
-				ny /= r;
+			var saw_count = 15;
+			var saw_length = 10;
+
+			for(var k = 0; k < saw_count; ++k) {
+			
+				var nx = saw_length * pow(-1, k)   * (targets[i].y - y);
+				var ny = saw_length * pow(-1, k+1) * (targets[i].x - x);
+				
+				var r = sqrt(pow(targets[i].x - x, 2) + pow(targets[i].y - y, 2));
+				if(r !== 0) {
+					nx /= r;
+					ny /= r;
+				}
+
+				ctx.lineTo(x + (targets[i].x-x)*k/saw_count + nx, y + (targets[i].y-y)*k/saw_count + ny);
 			}
 
-			ctx.lineTo(x + (tx-x)*k/saw_count + nx, y + (ty-y)*k/saw_count + ny);
+			ctx.lineTo(targets[i].x, targets[i].y);  
+			ctx.stroke();
 		}
-
-		ctx.lineTo(tx,ty);  
-		ctx.stroke();
 
    		ctx.beginPath();
         ctx.arc( x, y, 30, 0, TWO_PI );
@@ -133,10 +138,12 @@ $(function() {
         ctx.lineWidth   = 2;
         ctx.stroke();
 
-   		ctx.beginPath();
-        ctx.arc( tx, ty, 10, 0, TWO_PI );
-        ctx.fillStyle = '#FF0077';
-        ctx.fill();
+        for(var i = 0; i < targets.length; ++i) {
+	   		ctx.beginPath();
+	        ctx.arc( targets[i].x, targets[i].y, 10, 0, TWO_PI );
+	        ctx.fillStyle = '#FF0077';
+	        ctx.fill();
+    	}
 	};
 
 
@@ -145,12 +152,13 @@ $(function() {
 		if(dt > 0.5) dt = 0.5;
 		t  += dt;
 
-		if(settings.mouse) {	
-			tx = ctx.mouse.x;
-			ty = ctx.mouse.y;
-		} else {
-			tx = ctx.width  * 0.5 + 0.2 * ctx.width * sin(0.7 * t);
-			ty = ctx.height * 0.5;
+		targets = ctx.touches.slice();
+
+		if(!(settings.mouse)) {
+			targets = [{
+				'x' : ctx.width  * 0.5 + 0.2 * ctx.width * sin(0.7 * t), 
+				'y' : ctx.height * 0.5
+			}];
 		}
 
 		var f = F(x, y);
