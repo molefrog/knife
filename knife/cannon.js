@@ -1,12 +1,16 @@
 $(function() {
+	var max_balls = 400;
+
 	var Settings = function() {
 		this.friction 		= 0.1;
-		this.restitution 	= -0.9;
-		this.gravitational  = 2000;
+		this.restitution 	= 0.9;
+		this.universal  	= 2000;
 		this.time_speed 	= 4.0;
 		this.explode_power 	= 500.0;
+		this.balls_count	= 150;
 
-		this.explode    = false;
+		this.explode 		= false;
+		this.leap_enabled 	= false;
 
 		this.color0 = "#f20072";
 		this.color1 = "#d1d953";
@@ -17,12 +21,11 @@ $(function() {
 	window.onload = function() {
 		var gui = new dat.GUI();
 
-		gui.add(settings, 'friction', 	 0.0, 0.5);
-		gui.add(settings, 'gravitational', 1000.0, 2500.0);
-		gui.add(settings, 'restitution', 	 -2.0, 0.0); 
-		gui.add(settings, 'time_speed', 	 -5.0, 10.0); 
-		gui.add(settings, 'explode_power', 	 200.0, 1000.0); 
-
+		gui.add(settings, 'balls_count', 0, max_balls); 
+		gui.add(settings, 'friction', 0.0, 0.5);
+		gui.add(settings, 'universal', 0.0, 2500.0);
+		gui.add(settings, 'time_speed', -5.0, 10.0); 
+		gui.add(settings, 'explode_power', 0.0, 1000.0);
 
 		gui.addColor(settings, 'color0');
 		gui.addColor(settings, 'color1');
@@ -52,7 +55,7 @@ $(function() {
 	}
 
 
-	for(var i = 0; i < 250; ++i) {
+	for(var i = 0; i < max_balls; ++i) {
 		var ball = new Ball();
 
 		ball.x = random(0, ctx.width);
@@ -71,7 +74,13 @@ $(function() {
 
 		dt *= settings.time_speed;
 
-		for(var i = 0; i < balls.length; ++i) {
+		if(!(settings.leap_enabled)) {
+			target_x = ctx.mouse.x;
+			target_y = ctx.mouse.y;
+		}
+
+
+		for(var i = 0; i < settings.balls_count; ++i) {
 			var ball = balls[i];
 
 			var force_x = 0.0;	
@@ -87,8 +96,8 @@ $(function() {
 					force_x -= settings.explode_power * (target_x - ball.x) / (r);
 					force_y -= settings.explode_power * (target_y - ball.y) / (r);
 				} else {
-					force_x += settings.gravitational * (target_x - ball.x) / (r*r);
-					force_y += settings.gravitational * (target_y - ball.y) / (r*r);	
+					force_x += settings.universal * (target_x - ball.x) / (r*r);
+					force_y += settings.universal * (target_y - ball.y) / (r*r);	
 				}
 			}
 
@@ -107,24 +116,24 @@ $(function() {
 			if(ball.y < ball.r) {
 				ball.y = ball.r;
 				ball.v_x = ball.v_x;
-				ball.v_y = settings.restitution * ball.v_y;
+				ball.v_y = -settings.restitution * ball.v_y;
 			}
 
 			if(ball.y > ctx.height - ball.r) {
 				ball.y = ctx.height - ball.r
 				ball.v_x = ball.v_x;
-				ball.v_y = settings.restitution * ball.v_y;
+				ball.v_y = -settings.restitution * ball.v_y;
 			}
 
 			if(ball.x < ball.r) {
 				ball.x = ball.r;
-				ball.v_x = settings.restitution * ball.v_x;
+				ball.v_x = -settings.restitution * ball.v_x;
 				ball.v_y = ball.v_y;
 			}
 
 			if(ball.x > ctx.width - ball.r) {
 				ball.x = ctx.width - ball.r
-				ball.v_x = settings.restitution * ball.v_x;
+				ball.v_x = -settings.restitution * ball.v_x;
 				ball.v_y = ball.v_y;
 			}
 		}
@@ -133,11 +142,9 @@ $(function() {
 			settings.explode = false;
 		}
 	};
-	
-	
 
 	ctx.draw = function() {
-		for(var i = 0; i < balls.length; ++i) {
+		for(var i = 0; i < settings.balls_count; ++i) {
 			var ball = balls[i];
 
 			ctx.save();
@@ -149,7 +156,7 @@ $(function() {
 
 			ctx.translate(ball.x, ball.y);
 
-			var factor = 1.0 - 0.5 * atan(sqrt(v_r / 20.0)) / HALF_PI;
+			var factor = 1.0 - 0.3 * atan(sqrt(v_r / 20.0)) / HALF_PI;
 
 			ctx.rotate(atan2(ball.v_y, ball.v_x));
 			ctx.scale(1.0, factor);
@@ -164,9 +171,9 @@ $(function() {
 			ctx.restore();
 		}
 			
-		ctx.fillStyle = '#282a27';
+		ctx.fillStyle = '#47f200';
 		ctx.beginPath();
-		ctx.arc(target_x, target_y, 5, 0, TWO_PI);
+		ctx.arc(target_x, target_y, 10, 0, TWO_PI);
 		ctx.fill();
 	};
 
@@ -182,8 +189,10 @@ $(function() {
 
     var canExplode = true;
 
-    controller.loop(function(frame, done) {
+    controller.loop(function(frame, done) { 
       if (frame.cursorPosition) {
+      	settings.leap_enabled = true;
+
         var leapPosition = region.mapToXY(
         	frame.cursorPosition, ctx.width, ctx.height);
 
@@ -200,9 +209,14 @@ $(function() {
 
       		setTimeout(function() {
       			canExplode = true;
-      		}, 1000);
+      		}, 2000);
       	};
       }
       done();
     });
+
+    controller.connection.on('disconnect', function() {
+    	settings.leap_enabled = false;
+    });
+
 });
