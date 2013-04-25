@@ -1,145 +1,208 @@
 $(function() {
-	// Global parameters
-	var FRICTION         = 0.4;
-	var WORLD_FACTOR	 = 40.0;
-	var DRAG_COEFFICIENT = 0.6;
+	var Settings = function() {
+		this.friction 		= 0.1;
+		this.restitution 	= -0.9;
+		this.gravitational  = 2000;
+		this.time_speed 	= 4.0;
+		this.explode_power 	= 500.0;
+
+		this.explode    = false;
+
+		this.color0 = "#f20072";
+		this.color1 = "#d1d953";
+	};
+
+ 	var settings = new Settings();
+
+	window.onload = function() {
+		var gui = new dat.GUI();
+
+		gui.add(settings, 'friction', 	 0.0, 0.5);
+		gui.add(settings, 'gravitational', 1000.0, 2500.0);
+		gui.add(settings, 'restitution', 	 -2.0, 0.0); 
+		gui.add(settings, 'time_speed', 	 -5.0, 10.0); 
+		gui.add(settings, 'explode_power', 	 200.0, 1000.0); 
+
+
+		gui.addColor(settings, 'color0');
+		gui.addColor(settings, 'color1');
+	};
 
 	// Creating a drawing context 
 	// (using sketch.js helper library).
 	var ctx = Sketch.create();
-
-	function Ball() {
-		this.color 			= 100;
-
-		this.mass 			= 1.0;
-		this.radius         = 1.0;
-
-		this.x              = 0.0;
-		this.y 				= 0.0;
-
-		this.velocity_x     = 0.0;
-		this.velocity_y 	= 0.0;
-
-		this.acceleration_x = 0.0;
-		this.acceleration_y = 0.0;
-
-		this.force_x 		= 0.0;
-		this.force_y 		= 0.0;
-	};
-
-	Ball.prototype.move = function(dt) {
-		this.acceleration_x = this.force_x / this.mass;
-		this.acceleration_y = this.force_y / this.mass;
-
-		// Using numerical differentiation to calculate new velocity
-		this.velocity_x += this.acceleration_x * dt;
-		this.velocity_y += this.acceleration_y * dt;
-
-		// Using this method again to recalculate position
-		this.x += this.velocity_x * dt;
-		this.y += this.velocity_y * dt;
-
-		if(this.y < this.radius) {
-			this.y = this.radius;
-			this.velocity_x = FRICTION * this.velocity_x;
-			this.velocity_y = -FRICTION * this.velocity_y;
-		}
-
-		if(this.y > ctx.height / WORLD_FACTOR - this.radius) {
-			this.y = ctx.height / WORLD_FACTOR - this.radius
-			this.velocity_x = FRICTION * this.velocity_x;
-			this.velocity_y = -FRICTION * this.velocity_y;
-		}
-
-		if(this.x < this.radius) {
-			this.x = this.radius;
-			this.velocity_x = -FRICTION * this.velocity_x;
-			this.velocity_y = FRICTION * this.velocity_y;
-		}
-
-		if(this.x > ctx.width / WORLD_FACTOR - this.radius) {
-			this.x = ctx.width / WORLD_FACTOR - this.radius
-			this.velocity_x = -FRICTION * this.velocity_x;
-			this.velocity_y = FRICTION * this.velocity_y;
-		}
-	};
-
-	Ball.prototype.draw = function(context) {
-		context.save();
-
-		context.fillStyle = 'hsl(' + this.color + ',70%,60%)';
-		context.translate(this.x, this.y);
-
-		var v_x = this.velocity_x;
-		var v_y = this.velocity_y;
-
-		var factor = 1.0 - 0.5 * atan(sqrt(v_x*v_x + v_y*v_y) / 20.0) / HALF_PI;
-
-		ctx.rotate(atan2(v_y, v_x));
-		ctx.scale(1.0, factor);
-
-		context.beginPath();
-		context.arc(0.0, 0.0, this.radius, 0, TWO_PI);
-		context.fill();
-
-		context.restore();
-	};
-
+	
 	var balls = [];
 
-	function newBall(x, y) {
-		var b = new Ball();
+	var target_x = 0.0;
+	var target_y = 0.0;
 
-		b.x = x;
-		b.y = y;
-		b.color = random(1, 360);
+	function Ball() {
+		this.m   = 1.0;
+		this.r   = 1.0;
 
-		b.radius = 0.3 + random(1, 50)/100;
-		b.mass = PI*b.radius*b.radius;
+		this.x   = 0.0;
+		this.y 	 = 0.0;
+ 
+		this.v_x = 0.0;
+		this.v_y = 0.0;
 
-		balls.push(b);
+		this.a_x = 0.0;
+		this.a_y = 0.0;
 	}
 
-	for(var i = 0; i < 350; ++i) {
-		newBall(random(1, ctx.width/WORLD_FACTOR), random(1, ctx.height/WORLD_FACTOR));
+
+	for(var i = 0; i < 250; ++i) {
+		var ball = new Ball();
+
+		ball.x = random(0, ctx.width);
+		ball.y = random(0, ctx.height);
+
+		ball.r = random(20, 40); 
+		ball.m = 0.001 * PI * pow(ball.r, 1.5);
+
+		balls.push(ball);
 	}
 
-
-	ctx.draw = function() {
-		ctx.scale(WORLD_FACTOR, WORLD_FACTOR);
-
-		for(var i = 0; i < balls.length; ++i) {
-			balls[i].draw(ctx);
-		}
-	};
 
 	ctx.update = function() {
-		var t = ctx.now/400;
+		var dt = ctx.dt ;
+		if(dt > 0.05) dt = 0.05;
 
-		var d = 0.03*(pow(sin(t), 1));//0.03*(sin(t*2));
+		dt *= settings.time_speed;
 
 		for(var i = 0; i < balls.length; ++i) {
 			var ball = balls[i];
 
-			var f_x = ctx.mouse.x / WORLD_FACTOR;
-			var f_y = ctx.mouse.y / WORLD_FACTOR;
+			var force_x = 0.0;	
+			var force_y = 0.0;
 
-			var r = sqrt((ball.x - f_x)*(ball.x - f_x) + (ball.y - f_y)*(ball.y - f_y));
+			force_x += -settings.friction * ball.v_x;
+			force_y += -settings.friction * ball.v_y;
 
+			var r = sqrt(pow(ball.x - target_x, 2) + pow(ball.y - target_y, 2));
 
-			ball.force_x = 0.0;
-			ball.force_y = 0.0;
-
-			ball.force_x += -DRAG_COEFFICIENT * ball.velocity_x;
-			ball.force_y += -DRAG_COEFFICIENT * ball.velocity_y;
-			
-			if(r > 0.4 ) {
-				ball.force_x += 40*(f_x - ball.x) / (r*r);
-				ball.force_y += 40*(f_y - ball.y) / (r*r);	
-			} else {
+			if( r > 15.0 ) {
+				if(settings.explode) {
+					force_x -= settings.explode_power * (target_x - ball.x) / (r);
+					force_y -= settings.explode_power * (target_y - ball.y) / (r);
+				} else {
+					force_x += settings.gravitational * (target_x - ball.x) / (r*r);
+					force_y += settings.gravitational * (target_y - ball.y) / (r*r);	
+				}
 			}
 
-				ball.move(0.04 + d);	
+			ball.a_x = force_x / ball.m;
+			ball.a_y = force_y / ball.m;
+
+			// Using numerical differentiation to calculate new velocity
+			ball.v_x += ball.a_x * dt;
+			ball.v_y += ball.a_y * dt;
+
+			// Using this method again to recalculate position
+			ball.x += ball.v_x * dt;
+			ball.y += ball.v_y * dt;
+
+			// Borders collision
+			if(ball.y < ball.r) {
+				ball.y = ball.r;
+				ball.v_x = ball.v_x;
+				ball.v_y = settings.restitution * ball.v_y;
+			}
+
+			if(ball.y > ctx.height - ball.r) {
+				ball.y = ctx.height - ball.r
+				ball.v_x = ball.v_x;
+				ball.v_y = settings.restitution * ball.v_y;
+			}
+
+			if(ball.x < ball.r) {
+				ball.x = ball.r;
+				ball.v_x = settings.restitution * ball.v_x;
+				ball.v_y = ball.v_y;
+			}
+
+			if(ball.x > ctx.width - ball.r) {
+				ball.x = ctx.width - ball.r
+				ball.v_x = settings.restitution * ball.v_x;
+				ball.v_y = ball.v_y;
+			}
+		}
+
+		if(settings.explode) {
+			settings.explode = false;
 		}
 	};
+	
+	
+
+	ctx.draw = function() {
+		for(var i = 0; i < balls.length; ++i) {
+			var ball = balls[i];
+
+			ctx.save();
+
+			var v_r = sqrt(ball.v_x * ball.v_x + ball.v_y * ball.v_y);	
+			
+			var scale = chroma.scale( [settings.color0, settings.color1]);			
+			ctx.fillStyle = scale(v_r / 100).hex();
+
+			ctx.translate(ball.x, ball.y);
+
+			var factor = 1.0 - 0.5 * atan(sqrt(v_r / 20.0)) / HALF_PI;
+
+			ctx.rotate(atan2(ball.v_y, ball.v_x));
+			ctx.scale(1.0, factor);
+
+			ctx.beginPath();
+			ctx.arc(0.0, 0.0, ball.r, 0, TWO_PI);
+			ctx.fill();
+			ctx.lineWidth = 0.02;
+			ctx.strokeStyle = 'white';
+			ctx.stroke();
+
+			ctx.restore();
+		}
+			
+		ctx.fillStyle = '#282a27';
+		ctx.beginPath();
+		ctx.arc(target_x, target_y, 5, 0, TWO_PI);
+		ctx.fill();
+	};
+
+	/* Leap Motion stuff */
+	var controller = new Leap.Controller({enableGestures: true});
+    var region = new Leap.UI.Region(
+    	[-100, 100, -100], 
+    	[100, 300, 100]
+    );
+
+    controller.addStep(new Leap.UI.Cursor())
+    controller.addStep(region.listener({nearThreshold:50}))
+
+    var canExplode = true;
+
+    controller.loop(function(frame, done) {
+      if (frame.cursorPosition) {
+        var leapPosition = region.mapToXY(
+        	frame.cursorPosition, ctx.width, ctx.height);
+
+        target_x = leapPosition[0];
+        target_y = leapPosition[1];
+      }
+
+      if(canExplode && frame.gestures && frame.gestures.length !== 0) {
+      	var gesture = frame.gestures[0];
+
+      	if(gesture.type === 'circle') {
+      		settings.explode = true;
+      		canExplode = false;
+
+      		setTimeout(function() {
+      			canExplode = true;
+      		}, 1000);
+      	};
+      }
+      done();
+    });
 });

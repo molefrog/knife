@@ -3,7 +3,8 @@
 		<title>Knife</title>
 		<style type="text/css">
 			html, body {
-				background: #343434;
+				//background: #0D1D1F;
+				background: #25585f;
 				margin: 0;
 			}
 		</style>
@@ -12,20 +13,11 @@
 		<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
 		<script type="text/javascript" src="http://soulwire.github.com/sketch.js/js/sketch.js"></script>
 
+		<!-- Unfortunately, cdn.js is extremely slow, so we will use local minified copies of some libraries -->
+		<script type="text/javascript" src="../vendor/dat.gui.min.js"></script>
+		<script type="text/javascript" src="../vendor/chroma.min.js"></script>
+		<script type="text/javascript" src="../vendor/leap.min.js"></script>
+		
 		<script type="text/javascript" src="cannon.js"></script>
-
-		<script type="text/javascript">
-
-			  var _gaq = _gaq || [];
-			  _gaq.push(['_setAccount', 'UA-38514762-1']);
-			  _gaq.push(['_trackPageview']);
-
-			  (function() {
-			    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-			    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-			    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-			  })();
-
-		</script>
 	</body>
 </html>
