@@ -1,5 +1,5 @@
 $(function() {
-	var max_balls = 400;
+	var max_balls = 300;
 
 	var Settings = function() {
 		this.friction 		= 0.1;
@@ -171,10 +171,6 @@ $(function() {
 			ctx.restore();
 		}
 			
-		ctx.fillStyle = '#47f200';
-		ctx.beginPath();
-		ctx.arc(target_x, target_y, 10, 0, TWO_PI);
-		ctx.fill();
 	};
 
 	/* Leap Motion stuff */
