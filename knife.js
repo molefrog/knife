@@ -6,10 +6,8 @@ $(function() {
 		this.restitution 	= 0.9;
 		this.universal  	= 2000;
 		this.time_speed 	= 4.0;
-		this.explode_power 	= 500.0;
 		this.balls_count	= 150;
 
-		this.explode 		= false;
 		this.leap_enabled 	= false;
 
 		this.color0 = "#f20072";
@@ -24,8 +22,7 @@ $(function() {
 		gui.add(settings, 'balls_count', 0, max_balls); 
 		gui.add(settings, 'friction', 0.0, 0.5);
 		gui.add(settings, 'universal', 0.0, 2500.0);
-		gui.add(settings, 'time_speed', -5.0, 10.0);
-		gui.add(settings, 'explode_power', 0.0, 1000.0);
+		gui.add(settings, 'time_speed', -5.0, 5.0);
 
 		gui.addColor(settings, 'color0');
 		gui.addColor(settings, 'color1');
@@ -71,7 +68,9 @@ $(function() {
 
 
 	ctx.update = function() {
-		var dt = ctx.dt ;
+		// TODO: fix this, so that simulation speed wouldn't depend
+		// on a performance of the machine
+		var dt = ctx.dt;
 		if(dt > 0.05) dt = 0.05;
 
 		dt *= settings.time_speed;
@@ -94,13 +93,8 @@ $(function() {
 			var r = sqrt(pow(ball.x - target_x, 2) + pow(ball.y - target_y, 2));
 
 			if( r > 15.0 ) {
-				if(settings.explode) {
-					force_x -= settings.explode_power * (target_x - ball.x) / (r);
-					force_y -= settings.explode_power * (target_y - ball.y) / (r);
-				} else {
-					force_x += settings.universal * (target_x - ball.x) / (r*r);
-					force_y += settings.universal * (target_y - ball.y) / (r*r);	
-				}
+				force_x += settings.universal * (target_x - ball.x) / (r*r);
+				force_y += settings.universal * (target_y - ball.y) / (r*r);	
 			}
 
 			ball.a_x = force_x / ball.m;
@@ -139,10 +133,6 @@ $(function() {
 				ball.v_y = ball.v_y;
 			}
 		}
-
-		if(settings.explode) {
-			settings.explode = false;
-		}
 	};
 
 	ctx.draw = function() {
@@ -175,6 +165,8 @@ $(function() {
 			
 	};
 
+
+
 	/* Leap Motion stuff */
 	var controller = new Leap.Controller({enableGestures: true});
     var region = new Leap.UI.Region(
@@ -185,8 +177,6 @@ $(function() {
     controller.addStep(new Leap.UI.Cursor())
     controller.addStep(region.listener({nearThreshold:50}))
 
-    var canExplode = true;
-
     controller.loop(function(frame, done) { 
       if (frame.cursorPosition) {
       	settings.leap_enabled = true;
@@ -196,19 +186,6 @@ $(function() {
 
         target_x = leapPosition[0];
         target_y = leapPosition[1];
-      }
-
-      if(canExplode && frame.gestures && frame.gestures.length !== 0) {
-      	var gesture = frame.gestures[0];
-
-      	if(gesture.type === 'circle') {
-      		settings.explode = true;
-      		canExplode = false;
-
-      		setTimeout(function() {
-      			canExplode = true;
-      		}, 2000);
-      	};
       }
       done();
     });
