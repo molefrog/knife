@@ -2,6 +2,9 @@
 Interactive web-experiment which involves physical simulation of a particle system. The demo also supports Leap Motion.
 
 ### Background 
+
+![https://vimeo.com/64812106](https://secure-b.vimeocdn.com/ts/435/597/435597525_295.jpg)
+
 So, I finally got Leap Motion device (http://leapmotion.com/) through their developer program. After realizing that it supports JavaScript (without any extensions, it just works over WebSocket), I started writing a small demo, based on my previous work with simple particle system.
 
 I used LiveReload plugin to speed up the development process and get really cool live visualizations.
