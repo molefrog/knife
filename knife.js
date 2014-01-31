@@ -1,3 +1,4 @@
+
 $(function() {
 	var max_balls = 300;
 
@@ -66,6 +67,7 @@ $(function() {
 		balls.push(ball);
 	}
 
+	function sign(x) { return x >= 0 ? 1 : -1; }
 
 	ctx.update = function() {
 		// TODO: fix this, so that simulation speed wouldn't depend
@@ -87,9 +89,9 @@ $(function() {
 			var force_x = 0.0;	
 			var force_y = 0.0;
 
-			force_x += -settings.friction * ball.v_x;
-			force_y += -settings.friction * ball.v_y;
-
+			force_x += -sign(settings.time_speed) * settings.friction * ball.v_x;
+			force_y += -sign(settings.time_speed) * settings.friction * ball.v_y;
+		
 			var r = sqrt(pow(ball.x - target_x, 2) + pow(ball.y - target_y, 2));
 
 			if( r > 15.0 ) {
