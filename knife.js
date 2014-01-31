@@ -24,11 +24,13 @@ $(function() {
 		gui.add(settings, 'balls_count', 0, max_balls); 
 		gui.add(settings, 'friction', 0.0, 0.5);
 		gui.add(settings, 'universal', 0.0, 2500.0);
-		gui.add(settings, 'time_speed', -5.0, 10.0); 
+		gui.add(settings, 'time_speed', -5.0, 10.0);
 		gui.add(settings, 'explode_power', 0.0, 1000.0);
 
 		gui.addColor(settings, 'color0');
 		gui.addColor(settings, 'color1');
+
+		gui.close();
 	};
 
 	// Creating a drawing context 
